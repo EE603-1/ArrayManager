@@ -79,10 +79,10 @@ int rs485_init()
 
 	uart2 = UART_open(Board_UART2, &uartParams);
 
-	if (uart2 == NULL ) {
+	/*if (uart2 == NULL ) {
 		System_abort("Error opening the UART2");
 		return 1;
-		}
+		}*/
 
 	return 0;
 }
