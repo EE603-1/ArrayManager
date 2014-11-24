@@ -7,45 +7,54 @@
  *
  */
 #include <ti/drivers/UART.h>
+#include <ti/drivers/UART.c>
 #include <ti/drivers/uart/UARTTiva.h>
 #include "rs485.h"
 #include "../DK_TM4C129X.h"
 #include "../board.h"
 #include <ti/drivers/GPIO.h>
-/*
-UART_Handle uart2;
-UART_Params uartParams;
-*/
-extern  UART_Handle uart2;
+
+#include <xdc/std.h>
+#include <xdc/cfg/global.h>
+#include <xdc/runtime/Error.h>
+#include <xdc/runtime/Memory.h>
+#include <xdc/runtime/System.h>
+
+/* BIOS Header files */
+#include <ti/sysbios/BIOS.h>
+#include <ti/sysbios/knl/Clock.h>
+#include <ti/sysbios/knl/Task.h>
+
+ /* NDK Header files */
+#include <ti/ndk/inc/netmain.h>
+#include <ti/ndk/inc/_stack.h>
+
+/* TI-RTOS Header files */
+#include <ti/drivers/GPIO.h>
+
+
+
+
+
+
+
+
+static UART_Handle uart2;
+static UART_Params uartParams;
+
 int rs485_write(const unsigned char *buffer, UInt size)
 {
-	int i=0;
-	int j=0;
+	int i;
 	int num;
+	int time1,time2;
 	GPIO_write(Board_RS485_DE_RE_PIN, RS485_WRITE);
-	UART_init();
-//	num = UART_writePolling(uart2, (char *)buffer, size);
+	num = UART_writePolling(uart2, (char *)buffer, size);
+	time1 = Clock_getTicks();
+	for(i=0;i<size*3000;i++);
 
-	while(j<size)
-	{	//UART_init();
-		num = UART_writePolling(uart2, (char *)(buffer+j), 1);
-		for(i=0;i<=1000;i++);
-		j++;
-	}
-//	for(i=0;i<500;i++);
-/*
-	if(num == UART_ERROR)
-	{
-		System_printf("write error!!!: %d  \n",num);
-		System_flush();
-	}*/
-//	System_printf(" ");
-//	System_flush();
-	System_printf("write: %d bytes \n",num);
-//	System_flush();
-
-	//while(num < size) ;
-	//for(i=0;i<size*1000;i++);
+	time2 = Clock_getTicks();
+	System_printf("delay %d*3000 =  %d \n",size,time2-time1);
+	System_flush();
 	GPIO_write(Board_RS485_DE_RE_PIN, RS485_READ);
 	return num;
 }
@@ -57,11 +66,10 @@ int rs485_read(unsigned char *buffer, UInt size)
 	return num;
 }
 int rs485_init()
-{	UART_init();
+{
 	UART_Params_init(&uartParams);
-	uartParams.writeMode = UART_MODE_BLOCKING;
-	uartParams.readMode = UART_MODE_BLOCKING;
-	uartParams.writeTimeout = rs485_timeout;
+	//uartParams.writeMode = UART_MODE_BLOCKING;
+	//uartParams.writeCallback = UART_MODE_CALLBACK;
 	uartParams.writeDataMode = UART_DATA_BINARY  ;
 	uartParams.readDataMode = UART_DATA_BINARY  ;
 	uartParams.readReturnMode = UART_RETURN_FULL;
@@ -69,8 +77,7 @@ int rs485_init()
 	uartParams.baudRate = rs485_baudRate;
 	uartParams.readTimeout = rs485_timeout;
 
-	UART_init();
-	uart2 = UART_open(Board_UART0, &uartParams);
+	uart2 = UART_open(Board_UART2, &uartParams);
 
 	if (uart2 == NULL ) {
 		System_abort("Error opening the UART2");
